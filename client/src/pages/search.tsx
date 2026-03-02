@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import type { Product, Category } from "@shared/schema";
 import { Search as SearchIcon, SlidersHorizontal, X } from "lucide-react";
 
@@ -60,11 +60,11 @@ export default function SearchPage() {
         <div className="flex items-center justify-between gap-4 mb-6 flex-wrap">
           <div>
             <h1 className="text-2xl font-bold" data-testid="text-search-heading">
-              {keyword ? `Results for "${keyword}"` : "All Products"}
+              {keyword ? `ผลลัพธ์สำหรับ "${keyword}"` : "สินค้าทั้งหมด"}
             </h1>
             {data && (
               <p className="text-sm text-muted-foreground mt-1" data-testid="text-search-count">
-                {data.total} items found
+                พบ {data.total} รายการ
               </p>
             )}
           </div>
@@ -75,7 +75,7 @@ export default function SearchPage() {
             data-testid="button-toggle-filters"
           >
             <SlidersHorizontal className="w-4 h-4 mr-2" />
-            Filters
+            ตัวกรอง
           </Button>
         </div>
 
@@ -83,22 +83,22 @@ export default function SearchPage() {
           <div className="bg-card border rounded-md p-4 mb-6 space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
               <div className="space-y-1.5">
-                <Label className="text-xs">Keyword</Label>
+                <Label className="text-xs">คำค้นหา</Label>
                 <Input
                   data-testid="input-filter-keyword"
-                  placeholder="Search..."
+                  placeholder="ค้นหา..."
                   value={keyword}
                   onChange={(e) => setKeyword(e.target.value)}
                 />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs">Category</Label>
+                <Label className="text-xs">หมวดหมู่</Label>
                 <Select value={categoryId} onValueChange={setCategoryId}>
                   <SelectTrigger data-testid="select-filter-category">
-                    <SelectValue placeholder="All categories" />
+                    <SelectValue placeholder="ทุกหมวดหมู่" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All categories</SelectItem>
+                    <SelectItem value="all">ทุกหมวดหมู่</SelectItem>
                     {categories?.filter(c => c.isActive).map(c => (
                       <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>
                     ))}
@@ -106,7 +106,7 @@ export default function SearchPage() {
                 </Select>
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs">Min Price</Label>
+                <Label className="text-xs">ราคาต่ำสุด</Label>
                 <Input
                   data-testid="input-filter-min-price"
                   type="number"
@@ -116,20 +116,20 @@ export default function SearchPage() {
                 />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs">Max Price</Label>
+                <Label className="text-xs">ราคาสูงสุด</Label>
                 <Input
                   data-testid="input-filter-max-price"
                   type="number"
-                  placeholder="No limit"
+                  placeholder="ไม่จำกัด"
                   value={maxPrice}
                   onChange={(e) => setMaxPrice(e.target.value)}
                 />
               </div>
             </div>
             <div className="flex items-center gap-2 flex-wrap">
-              <Button size="sm" onClick={handleApply} data-testid="button-apply-filters">Apply</Button>
+              <Button size="sm" onClick={handleApply} data-testid="button-apply-filters">ใช้ตัวกรอง</Button>
               <Button size="sm" variant="ghost" onClick={clearFilters} data-testid="button-clear-filters">
-                <X className="w-4 h-4 mr-1" /> Clear
+                <X className="w-4 h-4 mr-1" /> ล้าง
               </Button>
             </div>
           </div>
@@ -145,7 +145,7 @@ export default function SearchPage() {
           ) : (
             <div className="col-span-full text-center py-16">
               <SearchIcon className="w-12 h-12 text-muted-foreground/30 mx-auto mb-4" />
-              <p className="text-muted-foreground">No products found matching your criteria</p>
+              <p className="text-muted-foreground">ไม่พบสินค้าตามเงื่อนไขที่เลือก</p>
             </div>
           )}
         </div>
@@ -159,10 +159,10 @@ export default function SearchPage() {
               onClick={() => setPage(p => p - 1)}
               data-testid="button-prev-page"
             >
-              Previous
+              ก่อนหน้า
             </Button>
             <span className="text-sm text-muted-foreground px-4" data-testid="text-page-info">
-              Page {page} of {totalPages}
+              หน้า {page} จาก {totalPages}
             </span>
             <Button
               variant="secondary"
@@ -171,7 +171,7 @@ export default function SearchPage() {
               onClick={() => setPage(p => p + 1)}
               data-testid="button-next-page"
             >
-              Next
+              ถัดไป
             </Button>
           </div>
         )}

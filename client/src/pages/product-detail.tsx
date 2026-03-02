@@ -13,6 +13,14 @@ import { MessageCircle, ShoppingBag, Package, ChevronLeft, ChevronRight, User as
 import type { Product, Category, User } from "@shared/schema";
 import { useState } from "react";
 
+const conditionThai: Record<string, string> = {
+  "new": "ใหม่",
+  "like-new": "เหมือนใหม่",
+  "excellent": "ดีเยี่ยม",
+  "good": "ดี",
+  "fair": "พอใช้",
+};
+
 export default function ProductDetail() {
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
@@ -33,7 +41,7 @@ export default function ProductDetail() {
       navigate(`/chat/${data.id}`);
     },
     onError: (err: Error) => {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      toast({ title: "เกิดข้อผิดพลาด", description: err.message, variant: "destructive" });
     },
   });
 
@@ -46,7 +54,7 @@ export default function ProductDetail() {
       navigate(`/pay/mock/${data.sessionId}`);
     },
     onError: (err: Error) => {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      toast({ title: "เกิดข้อผิดพลาด", description: err.message, variant: "destructive" });
     },
   });
 
@@ -84,8 +92,8 @@ export default function ProductDetail() {
         <Header />
         <div className="max-w-5xl mx-auto px-4 py-16 text-center">
           <Package className="w-16 h-16 text-muted-foreground/30 mx-auto mb-4" />
-          <h2 className="text-xl font-bold mb-2">Product Not Found</h2>
-          <p className="text-muted-foreground">This item may have been removed or sold.</p>
+          <h2 className="text-xl font-bold mb-2">ไม่พบสินค้า</h2>
+          <p className="text-muted-foreground">สินค้านี้อาจถูกลบหรือขายไปแล้ว</p>
         </div>
       </div>
     );
@@ -168,18 +176,31 @@ export default function ProductDetail() {
 
             <div className="flex items-center gap-3 flex-wrap">
               <Badge variant="outline" data-testid="badge-condition">
-                Condition: {product.condition}
+                สภาพ: {conditionThai[product.condition] || product.condition}
               </Badge>
               <Badge
                 variant={product.status === "active" ? "default" : "secondary"}
                 data-testid="badge-status"
               >
-                {product.status}
+                {product.status === "active" ? "พร้อมขาย" : product.status === "reserved" ? "จอง" : product.status === "sold" ? "ขายแล้ว" : product.status}
               </Badge>
             </div>
 
+            {(product.brand || product.model || product.size || product.color || product.location) && (
+              <div className="border-t pt-4">
+                <h3 className="text-sm font-semibold mb-2">รายละเอียดเพิ่มเติม</h3>
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  {product.brand && <div><span className="text-muted-foreground">แบรนด์:</span> {product.brand}</div>}
+                  {product.model && <div><span className="text-muted-foreground">รุ่น:</span> {product.model}</div>}
+                  {product.size && <div><span className="text-muted-foreground">ไซส์:</span> {product.size}</div>}
+                  {product.color && <div><span className="text-muted-foreground">สี:</span> {product.color}</div>}
+                  {product.location && <div><span className="text-muted-foreground">สถานที่:</span> {product.location}</div>}
+                </div>
+              </div>
+            )}
+
             <div className="border-t pt-4">
-              <h3 className="text-sm font-semibold mb-2">Description</h3>
+              <h3 className="text-sm font-semibold mb-2">รายละเอียด</h3>
               <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap" data-testid="text-description">
                 {product.description}
               </p>
@@ -187,7 +208,7 @@ export default function ProductDetail() {
 
             {product.seller && (
               <div className="border-t pt-4">
-                <h3 className="text-sm font-semibold mb-2">Seller</h3>
+                <h3 className="text-sm font-semibold mb-2">ผู้ขาย</h3>
                 <div className="flex items-center gap-2">
                   <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
                     <UserIcon className="w-4 h-4 text-muted-foreground" />
@@ -207,7 +228,7 @@ export default function ProductDetail() {
                   data-testid="button-buy-now"
                 >
                   <ShoppingBag className="w-4 h-4 mr-2" />
-                  {buyMutation.isPending ? "Processing..." : "Buy Now"}
+                  {buyMutation.isPending ? "กำลังดำเนินการ..." : "ซื้อเลย"}
                 </Button>
               )}
               {!isSeller && (
@@ -220,7 +241,7 @@ export default function ProductDetail() {
                   data-testid="button-chat-seller"
                 >
                   <MessageCircle className="w-4 h-4 mr-2" />
-                  Chat Seller
+                  แชทกับผู้ขาย
                 </Button>
               )}
             </div>

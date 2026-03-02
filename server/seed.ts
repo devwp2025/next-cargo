@@ -15,10 +15,10 @@ export async function seedDatabase() {
   const admin = await storage.createUser("Admin", "admin@luxemarket.com", adminHash, "admin");
 
   const seller1Hash = await bcrypt.hash("seller123", 10);
-  const seller1 = await storage.createUser("Luxury Boutique", "seller1@luxemarket.com", seller1Hash);
+  const seller1 = await storage.createUser("Luxury Boutique", "seller1@luxemarket.com", seller1Hash, "user", "seller");
 
   const seller2Hash = await bcrypt.hash("seller123", 10);
-  const seller2 = await storage.createUser("Premium Kicks", "seller2@luxemarket.com", seller2Hash);
+  const seller2 = await storage.createUser("Premium Kicks", "seller2@luxemarket.com", seller2Hash, "user", "seller");
 
   const buyerHash = await bcrypt.hash("buyer123", 10);
   const buyer = await storage.createUser("Somchai K.", "buyer@luxemarket.com", buyerHash);

@@ -4,8 +4,16 @@ import type { Product } from "@shared/schema";
 import { Package } from "lucide-react";
 
 function formatPrice(price: number) {
-  return `B${price.toLocaleString()}`;
+  return `฿${price.toLocaleString()}`;
 }
+
+const conditionThai: Record<string, string> = {
+  "new": "ใหม่",
+  "like-new": "เหมือนใหม่",
+  "excellent": "ดีเยี่ยม",
+  "good": "ดี",
+  "fair": "พอใช้",
+};
 
 const conditionColors: Record<string, string> = {
   "new": "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
@@ -40,7 +48,7 @@ export default function ProductCard({ product }: { product: Product }) {
           )}
           {product.status === "reserved" && (
             <div className="absolute inset-0 bg-black/40 rounded-md flex items-center justify-center">
-              <span className="text-white font-semibold text-sm px-3 py-1 bg-black/60 rounded-md">Reserved</span>
+              <span className="text-white font-semibold text-sm px-3 py-1 bg-black/60 rounded-md">จองแล้ว</span>
             </div>
           )}
         </div>
@@ -53,7 +61,7 @@ export default function ProductCard({ product }: { product: Product }) {
               {formatPrice(product.price)}
             </span>
             <Badge variant="secondary" className={`text-[10px] px-1.5 py-0 ${conditionClass} border-0`}>
-              {product.condition}
+              {conditionThai[product.condition] || product.condition}
             </Badge>
           </div>
         </div>

@@ -21,14 +21,15 @@ export default function Login() {
     setLoading(true);
     try {
       const user = await login(email, password);
-      if (user.role === "admin") {
-        navigate("/admin");
-      } else {
-        navigate("/dashboard");
-      }
+      setTimeout(() => {
+        if (user.role === "admin") {
+          navigate("/admin");
+        } else {
+          navigate("/dashboard");
+        }
+      }, 100);
     } catch (err: any) {
-      toast({ title: "Login failed", description: err.message, variant: "destructive" });
-    } finally {
+      toast({ title: "เข้าสู่ระบบไม่สำเร็จ", description: err.message, variant: "destructive" });
       setLoading(false);
     }
   };
@@ -38,15 +39,15 @@ export default function Login() {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <Link href="/">
-            <span className="text-lg font-bold tracking-tight cursor-pointer" data-testid="link-home-logo">LUXE MARKET</span>
+            <span className="text-lg font-bold tracking-tight cursor-pointer" data-testid="link-home-logo">NEXT CARGO</span>
           </Link>
-          <CardTitle className="text-xl mt-4" data-testid="text-login-title">Welcome back</CardTitle>
-          <CardDescription>Sign in to your account</CardDescription>
+          <CardTitle className="text-xl mt-4" data-testid="text-login-title">ยินดีต้อนรับกลับ</CardTitle>
+          <CardDescription>เข้าสู่ระบบบัญชีของคุณ</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-1.5">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">อีเมล</Label>
               <Input
                 id="email"
                 data-testid="input-email"
@@ -58,12 +59,12 @@ export default function Login() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password">รหัสผ่าน</Label>
               <Input
                 id="password"
                 data-testid="input-password"
                 type="password"
-                placeholder="Your password"
+                placeholder="รหัสผ่านของคุณ"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
@@ -71,13 +72,13 @@ export default function Login() {
             </div>
             <Button type="submit" className="w-full" disabled={loading} data-testid="button-login">
               {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-              Sign In
+              เข้าสู่ระบบ
             </Button>
           </form>
           <p className="text-sm text-center text-muted-foreground mt-4">
-            Don't have an account?{" "}
+            ยังไม่มีบัญชี?{" "}
             <Link href="/register" className="text-foreground font-medium underline" data-testid="link-register">
-              Register
+              สมัครสมาชิก
             </Link>
           </p>
         </CardContent>

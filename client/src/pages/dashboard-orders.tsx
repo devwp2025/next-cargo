@@ -9,8 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { Order } from "@shared/schema";
-import { useEffect } from "react";
-import { ShoppingBag } from "lucide-react";
+import { useEffect, useState } from "react";
+import { ShoppingBag, Loader2 } from "lucide-react";
 
 const statusFlow: Record<string, string[]> = {
   paid: ["preparing", "canceled"],
@@ -27,10 +27,20 @@ const statusColors: Record<string, string> = {
   canceled: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
 };
 
+const statusThai: Record<string, string> = {
+  pending_payment: "รอชำระ",
+  paid: "ชำระแล้ว",
+  preparing: "กำลังจัดเตรียม",
+  shipped: "จัดส่งแล้ว",
+  completed: "เสร็จสิ้น",
+  canceled: "ยกเลิก",
+};
+
 export default function DashboardOrders() {
   const { user, isLoading: authLoading } = useAuth();
   const [, navigate] = useLocation();
   const { toast } = useToast();
+  const [pendingStatus, setPendingStatus] = useState<Record<number, string>>({});
 
   useEffect(() => {
     if (!authLoading && !user) navigate("/login");
@@ -45,22 +55,31 @@ export default function DashboardOrders() {
     mutationFn: async ({ id, status }: { id: number; status: string }) => {
       await apiRequest("PATCH", `/api/dashboard/orders/${id}/status`, { status });
     },
-    onSuccess: () => {
+    onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard/orders"] });
-      toast({ title: "Order updated" });
+      setPendingStatus(prev => { const n = { ...prev }; delete n[id]; return n; });
+      toast({ title: "อัปเดตสถานะสำเร็จ" });
     },
-    onError: (err: Error) => {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+    onError: (err: Error, { id }) => {
+      setPendingStatus(prev => { const n = { ...prev }; delete n[id]; return n; });
+      toast({ title: "เกิดข้อผิดพลาด", description: err.message, variant: "destructive" });
     },
   });
 
   if (!user) return null;
 
+  const handleSave = (id: number) => {
+    const status = pendingStatus[id];
+    if (status) {
+      updateMutation.mutate({ id, status });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
       <div className="max-w-5xl mx-auto px-4 py-8">
-        <h1 className="text-2xl font-bold mb-6" data-testid="text-seller-orders-heading">My Sales</h1>
+        <h1 className="text-2xl font-bold mb-6" data-testid="text-seller-orders-heading">รายการขาย</h1>
 
         {isLoading ? (
           <div className="space-y-4">
@@ -75,25 +94,40 @@ export default function DashboardOrders() {
               return (
                 <div key={order.id} className="flex items-center gap-4 p-4 border rounded-md flex-wrap" data-testid={`row-seller-order-${order.id}`}>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium">Order #{order.id}</p>
+                    <p className="text-sm font-medium">คำสั่งซื้อ #{order.id}</p>
                     {order.product && <p className="text-xs text-muted-foreground truncate">{order.product.title}</p>}
-                    {order.buyer && <p className="text-xs text-muted-foreground">Buyer: {order.buyer.name}</p>}
+                    {order.buyer && <p className="text-xs text-muted-foreground">ผู้ซื้อ: {order.buyer.name}</p>}
                   </div>
-                  <p className="text-sm font-bold">B{order.amount.toLocaleString()}</p>
+                  <p className="text-sm font-bold">฿{order.amount.toLocaleString()}</p>
                   <Badge variant="secondary" className={`border-0 ${statusColors[order.status] || ""}`}>
-                    {order.status}
+                    {statusThai[order.status] || order.status}
                   </Badge>
                   {nextStatuses.length > 0 && (
-                    <Select onValueChange={(status) => updateMutation.mutate({ id: order.id, status })}>
-                      <SelectTrigger className="w-32" data-testid={`select-order-status-${order.id}`}>
-                        <SelectValue placeholder="Update" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {nextStatuses.map(s => (
-                          <SelectItem key={s} value={s}>{s}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <>
+                      <Select
+                        value={pendingStatus[order.id] || ""}
+                        onValueChange={(status) => setPendingStatus(prev => ({ ...prev, [order.id]: status }))}
+                      >
+                        <SelectTrigger className="w-32" data-testid={`select-order-status-${order.id}`}>
+                          <SelectValue placeholder="อัปเดต" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {nextStatuses.map(s => (
+                            <SelectItem key={s} value={s}>{statusThai[s] || s}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {pendingStatus[order.id] && (
+                        <Button
+                          size="sm"
+                          onClick={() => handleSave(order.id)}
+                          disabled={updateMutation.isPending}
+                          data-testid={`button-save-order-${order.id}`}
+                        >
+                          {updateMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "บันทึก"}
+                        </Button>
+                      )}
+                    </>
                   )}
                 </div>
               );
@@ -102,7 +136,7 @@ export default function DashboardOrders() {
         ) : (
           <div className="text-center py-16">
             <ShoppingBag className="w-12 h-12 text-muted-foreground/30 mx-auto mb-4" />
-            <p className="text-muted-foreground">No sales yet</p>
+            <p className="text-muted-foreground">ยังไม่มีรายการขาย</p>
           </div>
         )}
       </div>

@@ -1,0 +1,113 @@
+Please MODIFY the existing Next.js (App Router) marketplace project with MINIMAL changes.
+Do NOT refactor unrelated parts. Only implement the following fixes/enhancements.
+
+1) LOGIN BUG (requires 2 attempts)
+- Fix login so that after submitting email/password once, the user is authenticated and redirected immediately.
+- After successful login, perform server-side role check and auto-redirect:
+  - admin -> /admin
+  - user  -> /dashboard
+- Ensure session/cookies are set before redirect. If using client fetch, await completion then redirect; call router.refresh() after redirect.
+- Ensure login page and auth-dependent pages are not cached (see caching section below).
+
+2) ADMIN DASHBOARD IMPROVEMENTS
+- Ensure admin can manage:
+  - Orders (view all + inspect payment/order status; allow status change only if already implemented, otherwise view-only is OK)
+  - Users (list users; allow role change user<->admin; optional block/disable if easy)
+  - Categories (already present)
+- Improve status update dropdown UX in admin products/orders:
+  - Do NOT update immediately on selection.
+  - Change to: select status -> click "บันทึก" (Save) button OR show a confirm dialog before applying.
+  - Show loading state and success toast/message.
+
+3) BRANDING + LANGUAGE
+- Rename site to "Next Cargo"
+- Convert ALL UI text/labels/buttons/messages to Thai (including auth pages, dashboard, admin, empty states, errors).
+- Keep routes and DB fields as-is; only change displayed strings and site title/metadata.
+
+4) PRODUCT CREATE: FILE UPLOAD + MORE DETAILS
+- Replace "Image URLs" textarea with file upload:
+  - <input type="file" multiple accept="image/*">
+  - Implement POST /api/upload to receive images and store them on the server (e.g., /public/uploads) and return file URLs.
+  - Save image URLs/paths into Product.images (string array) as before.
+  - Validate file types and set a max size limit.
+- Add additional product fields (minimal schema extension, no big refactor):
+  - brand, model, size, color, location (string fields)
+  - Show these fields in product create/edit form and product detail page.
+  - Keep existing fields and flows unchanged.
+
+5) SELLER IDENTITY VERIFICATION (KYC) + ADMIN APPROVAL
+- Add KYC fields to User and a status:
+  - kycStatus: 'unverified' | 'pending' | 'approved' | 'rejected'
+  - idCardNumber (store carefully; masking in UI is fine)
+  - idCardImageFront, idCardImageBack (uploaded files)
+- Allow sellers to submit KYC info and upload ID images.
+- Admin can review and approve/reject KYC:
+  - Add a simple admin UI (can be in /admin/users or /admin/kyc) to view uploaded images and set kycStatus.
+- Show a visible status badge in user dashboard/profile:
+  - ยังไม่ยืนยันตัวตน / รอตรวจสอบ / ยืนยันแล้ว / ไม่ผ่านการยืนยัน
+- IMPORTANT: Users can still list products even if not verified (do not block listing).
+
+6) FIX STALE DATA / CACHING ACROSS THE APP
+- Many pages show stale cached data and require manual refresh.
+- Make auth- and data-sensitive pages dynamic and non-cached:
+  - Set export const dynamic = 'force-dynamic' and export const revalidate = 0
+  - Apply to: /dashboard/*, /admin/*, /me/orders, /chat/*, and any page that depends on current user/session.
+- If any server components use fetch() for internal APIs, set cache: 'no-store'.
+- After create/update actions (products, statuses, categories, kyc), ensure UI updates immediately:
+  - Use router.refresh() on the client OR revalidatePath() on the server where appropriate.
+
+7) REGISTER TOGGLE: BUYER vs SELLER (UPDATED FLOW)
+
+- On the register page, add a clear toggle (radio buttons or a switch) to choose:
+  - "ผู้ซื้อทั่วไป"
+  - "ผู้ขาย"
+
+- Store this choice in the User model with a new field:
+  - accountType: 'buyer' | 'seller'
+  (Default should be 'buyer')
+
+POST-REGISTER FLOW:
+- After successful registration (both buyer and seller):
+  - Automatically log the user in.
+  - Redirect to /dashboard (NOT to a KYC page).
+
+SELLER KYC BEHAVIOR:
+- If accountType = seller:
+  - On /dashboard, show a prominent Thai banner if:
+      kycStatus is 'unverified' OR 'pending' OR 'rejected'
+  - Example banner messages:
+      - ยังไม่ยืนยันตัวตน กรุณายืนยันตัวตนเพื่อเพิ่มความน่าเชื่อถือ
+      - รอตรวจสอบเอกสารยืนยันตัวตน
+      - เอกสารถูกปฏิเสธ กรุณาส่งใหม่อีกครั้ง
+  - Banner should include a button:
+      "ยืนยันตัวตนตอนนี้"
+      which links to a dedicated KYC submission page (e.g. /dashboard/verify)
+
+- Seller CAN still list products even if not verified (do not block listing).
+
+KYC PAGE:
+- Create a simple page for KYC submission:
+    /dashboard/verify
+- Allow uploading:
+    - เลขบัตรประชาชน
+    - รูปบัตรด้านหน้า
+    - รูปบัตรด้านหลัง
+- On submission:
+    - Set kycStatus = 'pending'
+- Admin can later approve/reject in admin panel.
+
+ADMIN VIEW:
+- In /admin/users:
+    - Show accountType badge (buyer/seller)
+    - Show kycStatus badge (unverified/pending/approved/rejected)
+    - Allow admin to change kycStatus manually (approve/reject).
+
+UI REQUIREMENTS:
+- All labels and messages must be Thai.
+- Banner must be visually noticeable but not intrusive.
+- Do NOT change existing routing structure except adding /dashboard/verify.
+ 
+
+Deliver:
+- Working fixes without changing unrelated functionality.
+- Update README if new env vars or setup steps are required (e.g., uploads folder).

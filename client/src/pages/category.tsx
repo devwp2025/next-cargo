@@ -46,18 +46,18 @@ export default function CategoryPage() {
         </h1>
         {data && (
           <p className="text-sm text-muted-foreground mb-6" data-testid="text-category-count">
-            {data.total} items
+            {data.total} รายการ
           </p>
         )}
 
         <div className="flex items-end gap-3 mb-6 flex-wrap">
           <div className="space-y-1.5">
-            <Label className="text-xs">Search</Label>
+            <Label className="text-xs">ค้นหา</Label>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
                 data-testid="input-category-search"
-                placeholder="Search in category..."
+                placeholder="ค้นหาในหมวดหมู่..."
                 value={keyword}
                 onChange={(e) => { setKeyword(e.target.value); setPage(1); }}
                 className="pl-9"
@@ -65,7 +65,7 @@ export default function CategoryPage() {
             </div>
           </div>
           <div className="space-y-1.5">
-            <Label className="text-xs">Min Price</Label>
+            <Label className="text-xs">ราคาต่ำสุด</Label>
             <Input
               data-testid="input-category-min-price"
               type="number"
@@ -76,11 +76,11 @@ export default function CategoryPage() {
             />
           </div>
           <div className="space-y-1.5">
-            <Label className="text-xs">Max Price</Label>
+            <Label className="text-xs">ราคาสูงสุด</Label>
             <Input
               data-testid="input-category-max-price"
               type="number"
-              placeholder="Any"
+              placeholder="ไม่จำกัด"
               value={maxPrice}
               onChange={(e) => { setMaxPrice(e.target.value); setPage(1); }}
               className="w-28"
@@ -98,7 +98,7 @@ export default function CategoryPage() {
           ) : (
             <div className="col-span-full text-center py-16">
               <Package className="w-12 h-12 text-muted-foreground/30 mx-auto mb-4" />
-              <p className="text-muted-foreground">No products in this category yet</p>
+              <p className="text-muted-foreground">ยังไม่มีสินค้าในหมวดหมู่นี้</p>
             </div>
           )}
         </div>
@@ -106,11 +106,11 @@ export default function CategoryPage() {
         {totalPages > 1 && (
           <div className="flex items-center justify-center gap-2 mt-8">
             <Button variant="secondary" size="sm" disabled={page <= 1} onClick={() => setPage(p => p - 1)} data-testid="button-prev-page">
-              Previous
+              ก่อนหน้า
             </Button>
-            <span className="text-sm text-muted-foreground px-4">Page {page} of {totalPages}</span>
+            <span className="text-sm text-muted-foreground px-4">หน้า {page} จาก {totalPages}</span>
             <Button variant="secondary" size="sm" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)} data-testid="button-next-page">
-              Next
+              ถัดไป
             </Button>
           </div>
         )}

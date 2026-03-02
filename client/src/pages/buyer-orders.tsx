@@ -8,6 +8,15 @@ import type { Order } from "@shared/schema";
 import { useEffect } from "react";
 import { ShoppingBag } from "lucide-react";
 
+const statusThai: Record<string, string> = {
+  pending_payment: "รอชำระ",
+  paid: "ชำระแล้ว",
+  preparing: "กำลังจัดเตรียม",
+  shipped: "จัดส่งแล้ว",
+  completed: "เสร็จสิ้น",
+  canceled: "ยกเลิก",
+};
+
 const statusColors: Record<string, string> = {
   pending_payment: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
   paid: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
@@ -36,7 +45,7 @@ export default function BuyerOrders() {
     <div className="min-h-screen bg-background">
       <Header />
       <div className="max-w-5xl mx-auto px-4 py-8">
-        <h1 className="text-2xl font-bold mb-6" data-testid="text-buyer-orders-heading">My Orders</h1>
+        <h1 className="text-2xl font-bold mb-6" data-testid="text-buyer-orders-heading">ประวัติการสั่งซื้อ</h1>
 
         {isLoading ? (
           <div className="space-y-4">
@@ -56,17 +65,17 @@ export default function BuyerOrders() {
                 <div className="flex-1 min-w-0">
                   <Link href={`/product/${order.productId}`}>
                     <p className="text-sm font-medium truncate hover:underline cursor-pointer">
-                      {order.product?.title || `Order #${order.id}`}
+                      {order.product?.title || `คำสั่งซื้อ #${order.id}`}
                     </p>
                   </Link>
-                  {order.seller && <p className="text-xs text-muted-foreground">Seller: {order.seller.name}</p>}
+                  {order.seller && <p className="text-xs text-muted-foreground">ผู้ขาย: {order.seller.name}</p>}
                   <p className="text-xs text-muted-foreground">
-                    {new Date(order.createdAt).toLocaleDateString()}
+                    {new Date(order.createdAt).toLocaleDateString("th-TH")}
                   </p>
                 </div>
-                <p className="text-sm font-bold">B{order.amount.toLocaleString()}</p>
+                <p className="text-sm font-bold">฿{order.amount.toLocaleString()}</p>
                 <Badge variant="secondary" className={`border-0 ${statusColors[order.status] || ""}`}>
-                  {order.status}
+                  {statusThai[order.status] || order.status}
                 </Badge>
               </div>
             ))}
@@ -74,7 +83,7 @@ export default function BuyerOrders() {
         ) : (
           <div className="text-center py-16">
             <ShoppingBag className="w-12 h-12 text-muted-foreground/30 mx-auto mb-4" />
-            <p className="text-muted-foreground">No orders yet. Start shopping!</p>
+            <p className="text-muted-foreground">ยังไม่มีประวัติการสั่งซื้อ เริ่มช้อปปิ้งเลย!</p>
           </div>
         )}
       </div>

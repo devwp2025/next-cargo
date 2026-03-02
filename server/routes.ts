@@ -8,6 +8,10 @@ import { log } from "./index";
 import { randomUUID } from "crypto";
 import connectPgSimple from "connect-pg-simple";
 import { pool } from "./db";
+import multer from "multer";
+import path from "path";
+import fs from "fs";
+import express from "express";
 
 const PgSession = connectPgSimple(session);
 
@@ -39,10 +43,36 @@ async function requireAdmin(req: Request, res: Response, next: NextFunction) {
   next();
 }
 
+const uploadsDir = path.join(process.cwd(), "uploads");
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
+
+const upload = multer({
+  storage: multer.diskStorage({
+    destination: (_req, _file, cb) => cb(null, uploadsDir),
+    filename: (_req, file, cb) => {
+      const ext = path.extname(file.originalname);
+      cb(null, `${randomUUID()}${ext}`);
+    },
+  }),
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    const allowed = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+    if (allowed.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error("Only JPEG, PNG, WebP, and GIF images are allowed"));
+    }
+  },
+});
+
 export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
+  app.use("/uploads", express.static(uploadsDir));
+
   app.use(
     session({
       store: new PgSession({
@@ -71,19 +101,28 @@ export async function registerRoutes(
 
   app.post("/api/auth/register", async (req, res) => {
     try {
-      const { name, email, password } = z.object({
+      const { name, email, password, accountType } = z.object({
         name: z.string().min(1),
         email: z.string().email(),
         password: z.string().min(6),
+        accountType: z.enum(["buyer", "seller"]).default("buyer"),
       }).parse(req.body);
 
       const existing = await storage.getUserByEmail(email);
       if (existing) return res.status(400).json({ message: "Email already registered" });
 
       const passwordHash = await bcrypt.hash(password, 10);
-      const user = await storage.createUser(name, email, passwordHash);
-      req.session.userId = user.id;
-      log(`User registered: ${email}`);
+      const user = await storage.createUser(name, email, passwordHash, "user", accountType);
+
+      await new Promise<void>((resolve, reject) => {
+        req.session.userId = user.id;
+        req.session.save((err) => {
+          if (err) reject(err);
+          else resolve();
+        });
+      });
+
+      log(`User registered: ${email} (${accountType})`);
       const { passwordHash: _, ...safeUser } = user;
       res.json(safeUser);
     } catch (err: any) {
@@ -104,7 +143,14 @@ export async function registerRoutes(
       const valid = await bcrypt.compare(password, user.passwordHash);
       if (!valid) return res.status(401).json({ message: "Invalid credentials" });
 
-      req.session.userId = user.id;
+      await new Promise<void>((resolve, reject) => {
+        req.session.userId = user.id;
+        req.session.save((err) => {
+          if (err) reject(err);
+          else resolve();
+        });
+      });
+
       log(`User logged in: ${email}`);
       const { passwordHash, ...safeUser } = user;
       res.json(safeUser);
@@ -117,6 +163,15 @@ export async function registerRoutes(
     req.session.destroy(() => {
       res.json({ message: "Logged out" });
     });
+  });
+
+  app.post("/api/upload", requireAuth, upload.array("files", 10), (req, res) => {
+    const files = req.files as Express.Multer.File[];
+    if (!files || files.length === 0) {
+      return res.status(400).json({ message: "No files uploaded" });
+    }
+    const urls = files.map(f => `/uploads/${f.filename}`);
+    res.json({ urls });
   });
 
   app.get("/api/categories", async (_req, res) => {
@@ -181,6 +236,11 @@ export async function registerRoutes(
         condition: z.string().min(1),
         categoryId: z.number().int().positive(),
         images: z.array(z.string()).default([]),
+        brand: z.string().optional(),
+        model: z.string().optional(),
+        size: z.string().optional(),
+        color: z.string().optional(),
+        location: z.string().optional(),
       }).parse(req.body);
 
       const cat = await storage.getCategoryById(data.categoryId);
@@ -203,6 +263,11 @@ export async function registerRoutes(
         condition: z.string().min(1).optional(),
         categoryId: z.number().int().positive().optional(),
         images: z.array(z.string()).optional(),
+        brand: z.string().optional(),
+        model: z.string().optional(),
+        size: z.string().optional(),
+        color: z.string().optional(),
+        location: z.string().optional(),
       }).parse(req.body);
 
       if (data.categoryId) {
@@ -299,8 +364,6 @@ export async function registerRoutes(
       const payment = await storage.getPaymentBySessionId(req.params.sessionId);
       if (!payment) return res.status(404).json({ message: "Payment not found" });
       if (payment.status !== "requires_action") return res.status(400).json({ message: "Payment already processed" });
-
-      const webhookSecret = process.env.MOCKPAY_WEBHOOK_SECRET || "mockpay_secret_key_2024";
 
       if (action === "succeed") {
         await storage.updatePaymentStatus(payment.sessionId, "succeeded");
@@ -421,6 +484,35 @@ export async function registerRoutes(
     }
   });
 
+  app.post("/api/kyc/submit", requireAuth, upload.fields([
+    { name: "idCardFront", maxCount: 1 },
+    { name: "idCardBack", maxCount: 1 },
+  ]), async (req, res) => {
+    try {
+      const { idCardNumber } = z.object({ idCardNumber: z.string().min(5) }).parse(req.body);
+      const files = req.files as { [fieldname: string]: Express.Multer.File[] };
+      const front = files?.idCardFront?.[0];
+      const back = files?.idCardBack?.[0];
+
+      if (!front || !back) {
+        return res.status(400).json({ message: "Both front and back images required" });
+      }
+
+      const updated = await storage.updateUserKycInfo(req.session.userId!, {
+        idCardNumber,
+        idCardImageFront: `/uploads/${front.filename}`,
+        idCardImageBack: `/uploads/${back.filename}`,
+        kycStatus: "pending",
+      });
+
+      if (!updated) return res.status(404).json({ message: "User not found" });
+      const { passwordHash, ...safeUser } = updated;
+      res.json(safeUser);
+    } catch (err: any) {
+      res.status(400).json({ message: err.message || "Invalid input" });
+    }
+  });
+
   app.get("/api/admin/products", requireAdmin, async (_req, res) => {
     const prods = await storage.getAllProducts();
     res.json(prods);
@@ -436,6 +528,26 @@ export async function registerRoutes(
   app.get("/api/admin/orders", requireAdmin, async (_req, res) => {
     const ords = await storage.getAllOrders();
     res.json(ords);
+  });
+
+  app.patch("/api/admin/orders/:id/status", requireAdmin, async (req, res) => {
+    try {
+      const { status } = z.object({ status: z.enum(["paid", "preparing", "shipped", "completed", "canceled"]) }).parse(req.body);
+      const order = await storage.getOrderById(parseInt(req.params.id));
+      if (!order) return res.status(404).json({ message: "Order not found" });
+
+      const updated = await storage.updateOrderStatus(order.id, status);
+      if (status === "completed") {
+        await storage.updateProductStatus(order.productId, "sold");
+      }
+      if (status === "canceled") {
+        await storage.updateProductStatus(order.productId, "active");
+      }
+      log(`Order ${order.id} status updated to ${status} by admin`);
+      res.json(updated);
+    } catch (err: any) {
+      res.status(400).json({ message: err.message || "Invalid input" });
+    }
   });
 
   app.get("/api/admin/categories", requireAdmin, async (_req, res) => {
@@ -470,6 +582,30 @@ export async function registerRoutes(
   app.get("/api/admin/users", requireAdmin, async (_req, res) => {
     const allUsers = await storage.getAllUsers();
     res.json(allUsers);
+  });
+
+  app.patch("/api/admin/users/:id/role", requireAdmin, async (req, res) => {
+    try {
+      const { role } = z.object({ role: z.enum(["user", "admin"]) }).parse(req.body);
+      const updated = await storage.updateUserRole(parseInt(req.params.id), role);
+      if (!updated) return res.status(404).json({ message: "User not found" });
+      const { passwordHash, ...safeUser } = updated;
+      res.json(safeUser);
+    } catch (err: any) {
+      res.status(400).json({ message: err.message || "Invalid input" });
+    }
+  });
+
+  app.patch("/api/admin/users/:id/kyc", requireAdmin, async (req, res) => {
+    try {
+      const { kycStatus } = z.object({ kycStatus: z.enum(["unverified", "pending", "approved", "rejected"]) }).parse(req.body);
+      const updated = await storage.updateUserKycStatus(parseInt(req.params.id), kycStatus);
+      if (!updated) return res.status(404).json({ message: "User not found" });
+      const { passwordHash, ...safeUser } = updated;
+      res.json(safeUser);
+    } catch (err: any) {
+      res.status(400).json({ message: err.message || "Invalid input" });
+    }
   });
 
   return httpServer;

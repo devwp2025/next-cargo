@@ -20,6 +20,7 @@ import ChatList from "@/pages/chat";
 import ChatConversation from "@/pages/chat-conversation";
 import MockPay from "@/pages/mock-pay";
 import AdminDashboard from "@/pages/admin";
+import DashboardVerify from "@/pages/dashboard-verify";
 
 function Router() {
   return (
@@ -35,6 +36,7 @@ function Router() {
       <Route path="/dashboard/products/new" component={DashboardProductNew} />
       <Route path="/dashboard/products/:id/edit" component={DashboardProductNew} />
       <Route path="/dashboard/orders" component={DashboardOrders} />
+      <Route path="/dashboard/verify" component={DashboardVerify} />
       <Route path="/me/orders" component={BuyerOrders} />
       <Route path="/chat" component={ChatList} />
       <Route path="/chat/:conversationId" component={ChatConversation} />

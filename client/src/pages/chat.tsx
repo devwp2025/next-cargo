@@ -5,7 +5,7 @@ import Footer from "@/components/footer";
 import { useAuth } from "@/hooks/use-auth";
 import type { Conversation } from "@shared/schema";
 import { useEffect } from "react";
-import { MessageCircle, User as UserIcon } from "lucide-react";
+import { MessageCircle } from "lucide-react";
 
 export default function ChatList() {
   const { user, isLoading: authLoading } = useAuth();
@@ -31,7 +31,7 @@ export default function ChatList() {
     <div className="min-h-screen bg-background">
       <Header />
       <div className="max-w-3xl mx-auto px-4 py-8">
-        <h1 className="text-2xl font-bold mb-6" data-testid="text-chat-heading">Messages</h1>
+        <h1 className="text-2xl font-bold mb-6" data-testid="text-chat-heading">ข้อความ</h1>
 
         {isLoading ? (
           <div className="space-y-3">
@@ -58,10 +58,10 @@ export default function ChatList() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-2">
-                      <p className="text-sm font-medium truncate">{conv.otherUser?.name || "User"}</p>
+                      <p className="text-sm font-medium truncate">{conv.otherUser?.name || "ผู้ใช้"}</p>
                       {conv.lastMessage && (
                         <span className="text-xs text-muted-foreground flex-shrink-0">
-                          {new Date(conv.lastMessage.createdAt).toLocaleDateString()}
+                          {new Date(conv.lastMessage.createdAt).toLocaleDateString("th-TH")}
                         </span>
                       )}
                     </div>
@@ -77,7 +77,7 @@ export default function ChatList() {
         ) : (
           <div className="text-center py-16">
             <MessageCircle className="w-12 h-12 text-muted-foreground/30 mx-auto mb-4" />
-            <p className="text-muted-foreground">No conversations yet</p>
+            <p className="text-muted-foreground">ยังไม่มีข้อความ</p>
           </div>
         )}
       </div>

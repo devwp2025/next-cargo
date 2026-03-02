@@ -90,7 +90,7 @@ export default function ChatConversation() {
       setText("");
     },
     onError: (err: Error) => {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      toast({ title: "เกิดข้อผิดพลาด", description: err.message, variant: "destructive" });
     },
   });
 
@@ -115,11 +115,11 @@ export default function ChatConversation() {
             </Button>
           </Link>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium" data-testid="text-chat-user">{conversation?.otherUser?.name || "Loading..."}</p>
+            <p className="text-sm font-medium" data-testid="text-chat-user">{conversation?.otherUser?.name || "กำลังโหลด..."}</p>
             {conversation?.product && (
               <Link href={`/product/${conversation.product.id}`}>
                 <p className="text-xs text-muted-foreground truncate hover:underline cursor-pointer">
-                  {conversation.product.title} - B{conversation.product.price.toLocaleString()}
+                  {conversation.product.title} - ฿{conversation.product.price.toLocaleString()}
                 </p>
               </Link>
             )}
@@ -149,7 +149,7 @@ export default function ChatConversation() {
                 >
                   <p className="whitespace-pre-wrap break-words">{msg.text}</p>
                   <p className={`text-[10px] mt-1 ${isMine ? "text-primary-foreground/60" : "text-muted-foreground"}`}>
-                    {new Date(msg.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                    {new Date(msg.createdAt).toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" })}
                   </p>
                 </div>
               </div>
@@ -161,7 +161,7 @@ export default function ChatConversation() {
         <form onSubmit={handleSend} className="p-4 border-t flex gap-2">
           <Input
             data-testid="input-chat-message"
-            placeholder="Type a message..."
+            placeholder="พิมพ์ข้อความ..."
             value={text}
             onChange={(e) => setText(e.target.value)}
             autoFocus

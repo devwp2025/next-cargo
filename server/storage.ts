@@ -8,8 +8,11 @@ import {
 export interface IStorage {
   getUserById(id: number): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
-  createUser(name: string, email: string, passwordHash: string, role?: string): Promise<User>;
-  getAllUsers(): Promise<User[]>;
+  createUser(name: string, email: string, passwordHash: string, role?: string, accountType?: string): Promise<User>;
+  getAllUsers(): Promise<Omit<User, "passwordHash">[]>;
+  updateUserRole(id: number, role: string): Promise<User | undefined>;
+  updateUserKycStatus(id: number, kycStatus: string): Promise<User | undefined>;
+  updateUserKycInfo(id: number, data: { idCardNumber?: string; idCardImageFront?: string; idCardImageBack?: string; kycStatus?: string }): Promise<User | undefined>;
 
   getCategories(activeOnly?: boolean): Promise<Category[]>;
   getCategoryBySlug(slug: string): Promise<Category | undefined>;
@@ -22,8 +25,8 @@ export interface IStorage {
   getProductsByCategorySlug(slug: string, opts: { q?: string; minPrice?: number; maxPrice?: number; page?: number; limit?: number }): Promise<{ products: Product[]; total: number }>;
   getProductById(id: number): Promise<(Product & { seller: { id: number; name: string }; category: Category }) | undefined>;
   getProductsBySellerIdRaw(sellerId: number): Promise<Product[]>;
-  createProduct(data: { sellerId: number; categoryId: number; title: string; description: string; price: number; condition: string; images: string[] }): Promise<Product>;
-  updateProduct(id: number, sellerId: number, data: Partial<{ title: string; description: string; price: number; condition: string; categoryId: number; images: string[] }>): Promise<Product | undefined>;
+  createProduct(data: { sellerId: number; categoryId: number; title: string; description: string; price: number; condition: string; images: string[]; brand?: string; model?: string; size?: string; color?: string; location?: string }): Promise<Product>;
+  updateProduct(id: number, sellerId: number, data: Partial<{ title: string; description: string; price: number; condition: string; categoryId: number; images: string[]; brand: string; model: string; size: string; color: string; location: string }>): Promise<Product | undefined>;
   updateProductStatus(id: number, status: string, sellerId?: number): Promise<Product | undefined>;
   getAllProducts(): Promise<(Product & { seller?: { name: string } })[]>;
   reserveProduct(productId: number): Promise<boolean>;
@@ -62,13 +65,33 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
-  async createUser(name: string, email: string, passwordHash: string, role = "user") {
-    const [user] = await db.insert(users).values({ name, email, passwordHash, role }).returning();
+  async createUser(name: string, email: string, passwordHash: string, role = "user", accountType = "buyer") {
+    const [user] = await db.insert(users).values({ name, email, passwordHash, role, accountType }).returning();
     return user;
   }
 
   async getAllUsers() {
-    return db.select({ id: users.id, name: users.name, email: users.email, role: users.role, createdAt: users.createdAt }).from(users).orderBy(desc(users.createdAt));
+    return db.select({
+      id: users.id, name: users.name, email: users.email, role: users.role,
+      accountType: users.accountType, kycStatus: users.kycStatus,
+      idCardNumber: users.idCardNumber, idCardImageFront: users.idCardImageFront,
+      idCardImageBack: users.idCardImageBack, createdAt: users.createdAt,
+    }).from(users).orderBy(desc(users.createdAt));
+  }
+
+  async updateUserRole(id: number, role: string) {
+    const [user] = await db.update(users).set({ role }).where(eq(users.id, id)).returning();
+    return user;
+  }
+
+  async updateUserKycStatus(id: number, kycStatus: string) {
+    const [user] = await db.update(users).set({ kycStatus }).where(eq(users.id, id)).returning();
+    return user;
+  }
+
+  async updateUserKycInfo(id: number, data: { idCardNumber?: string; idCardImageFront?: string; idCardImageBack?: string; kycStatus?: string }) {
+    const [user] = await db.update(users).set(data).where(eq(users.id, id)).returning();
+    return user;
   }
 
   async getCategories(activeOnly = true) {
@@ -139,12 +162,12 @@ export class DatabaseStorage implements IStorage {
     return db.select().from(products).where(eq(products.sellerId, sellerId)).orderBy(desc(products.createdAt));
   }
 
-  async createProduct(data: { sellerId: number; categoryId: number; title: string; description: string; price: number; condition: string; images: string[] }) {
+  async createProduct(data: { sellerId: number; categoryId: number; title: string; description: string; price: number; condition: string; images: string[]; brand?: string; model?: string; size?: string; color?: string; location?: string }) {
     const [product] = await db.insert(products).values(data).returning();
     return product;
   }
 
-  async updateProduct(id: number, sellerId: number, data: Partial<{ title: string; description: string; price: number; condition: string; categoryId: number; images: string[] }>) {
+  async updateProduct(id: number, sellerId: number, data: Partial<{ title: string; description: string; price: number; condition: string; categoryId: number; images: string[]; brand: string; model: string; size: string; color: string; location: string }>) {
     const [product] = await db.update(products).set(data).where(and(eq(products.id, id), eq(products.sellerId, sellerId))).returning();
     return product;
   }
@@ -290,7 +313,8 @@ export class DatabaseStorage implements IStorage {
       const [product] = await db.select({ title: products.title }).from(products).where(eq(products.id, o.productId));
       const [buyer] = await db.select({ name: users.name }).from(users).where(eq(users.id, o.buyerId));
       const [seller] = await db.select({ name: users.name }).from(users).where(eq(users.id, o.sellerId));
-      result.push({ ...o, product, buyer, seller });
+      const [payment] = await db.select({ status: payments.status }).from(payments).where(eq(payments.orderId, o.id));
+      result.push({ ...o, product, buyer, seller, payment });
     }
     return result;
   }

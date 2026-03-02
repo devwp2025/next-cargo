@@ -7,9 +7,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Edit, Eye, EyeOff, Package } from "lucide-react";
+import { Plus, Edit, Package, Loader2 } from "lucide-react";
 import type { Product } from "@shared/schema";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { formatPrice } from "@/components/product-card";
 import {
   Select,
@@ -23,6 +23,7 @@ export default function DashboardProducts() {
   const { user, isLoading: authLoading } = useAuth();
   const [, navigate] = useLocation();
   const { toast } = useToast();
+  const [pendingStatus, setPendingStatus] = useState<Record<number, string>>({});
 
   useEffect(() => {
     if (!authLoading && !user) navigate("/login");
@@ -37,16 +38,25 @@ export default function DashboardProducts() {
     mutationFn: async ({ id, status }: { id: number; status: string }) => {
       await apiRequest("PATCH", `/api/dashboard/products/${id}/status`, { status });
     },
-    onSuccess: () => {
+    onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard/products"] });
-      toast({ title: "Product updated" });
+      setPendingStatus(prev => { const n = { ...prev }; delete n[id]; return n; });
+      toast({ title: "อัปเดตสถานะสำเร็จ" });
     },
-    onError: (err: Error) => {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+    onError: (err: Error, { id }) => {
+      setPendingStatus(prev => { const n = { ...prev }; delete n[id]; return n; });
+      toast({ title: "เกิดข้อผิดพลาด", description: err.message, variant: "destructive" });
     },
   });
 
   if (!user) return null;
+
+  const handleSaveStatus = (id: number) => {
+    const status = pendingStatus[id];
+    if (status) {
+      statusMutation.mutate({ id, status });
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -54,12 +64,12 @@ export default function DashboardProducts() {
       <div className="max-w-5xl mx-auto px-4 py-8">
         <div className="flex items-center justify-between gap-4 mb-6 flex-wrap">
           <div>
-            <h1 className="text-2xl font-bold" data-testid="text-products-heading">My Products</h1>
-            <p className="text-sm text-muted-foreground">{products?.length || 0} items</p>
+            <h1 className="text-2xl font-bold" data-testid="text-products-heading">สินค้าของฉัน</h1>
+            <p className="text-sm text-muted-foreground">{products?.length || 0} รายการ</p>
           </div>
           <Link href="/dashboard/products/new">
             <Button data-testid="button-new-product">
-              <Plus className="w-4 h-4 mr-2" /> New Listing
+              <Plus className="w-4 h-4 mr-2" /> ลงขายใหม่
             </Button>
           </Link>
         </div>
@@ -95,18 +105,28 @@ export default function DashboardProducts() {
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0">
                   <Select
-                    value={product.status}
-                    onValueChange={(status) => statusMutation.mutate({ id: product.id, status })}
+                    value={pendingStatus[product.id] || product.status}
+                    onValueChange={(status) => setPendingStatus(prev => ({ ...prev, [product.id]: status }))}
                   >
                     <SelectTrigger className="w-28" data-testid={`select-status-${product.id}`}>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="active">Active</SelectItem>
-                      <SelectItem value="hidden">Hidden</SelectItem>
-                      <SelectItem value="sold">Sold</SelectItem>
+                      <SelectItem value="active">พร้อมขาย</SelectItem>
+                      <SelectItem value="hidden">ซ่อน</SelectItem>
+                      <SelectItem value="sold">ขายแล้ว</SelectItem>
                     </SelectContent>
                   </Select>
+                  {pendingStatus[product.id] && pendingStatus[product.id] !== product.status && (
+                    <Button
+                      size="sm"
+                      onClick={() => handleSaveStatus(product.id)}
+                      disabled={statusMutation.isPending}
+                      data-testid={`button-save-status-${product.id}`}
+                    >
+                      {statusMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "บันทึก"}
+                    </Button>
+                  )}
                   <Link href={`/dashboard/products/${product.id}/edit`}>
                     <Button size="icon" variant="ghost" data-testid={`button-edit-${product.id}`}>
                       <Edit className="w-4 h-4" />
@@ -119,9 +139,9 @@ export default function DashboardProducts() {
         ) : (
           <div className="text-center py-16">
             <Package className="w-12 h-12 text-muted-foreground/30 mx-auto mb-4" />
-            <p className="text-muted-foreground mb-4">No products yet</p>
+            <p className="text-muted-foreground mb-4">ยังไม่มีสินค้า</p>
             <Link href="/dashboard/products/new">
-              <Button data-testid="button-list-first">List Your First Item</Button>
+              <Button data-testid="button-list-first">ลงขายสินค้าแรก</Button>
             </Link>
           </div>
         )}

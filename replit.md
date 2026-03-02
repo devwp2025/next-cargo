@@ -1,42 +1,46 @@
-# LUXE MARKET - Second-Hand Luxury Marketplace
+# NEXT CARGO - Second-Hand Luxury Marketplace
 
 ## Overview
-A full-stack second-hand luxury marketplace built with Express + React (Vite) + PostgreSQL + Drizzle ORM.
+A full-stack second-hand luxury marketplace (Thai-language UI) built with Express + React (Vite) + PostgreSQL + Drizzle ORM.
+Brand name: **NEXT CARGO** (all caps). All UI text is in Thai language.
 
 ## Tech Stack
 - **Frontend**: React 18, Vite, TailwindCSS, Shadcn UI, Wouter, TanStack Query
 - **Backend**: Express 5, TypeScript, Drizzle ORM, PostgreSQL
-- **Auth**: bcryptjs password hashing, express-session with pg-backed store
+- **Auth**: bcryptjs password hashing, express-session with pg-backed store (connect-pg-simple)
 - **Chat**: Polling-based (every 3 seconds)
 - **Payments**: Mock payment gateway
+- **File Upload**: multer, stored in `/uploads/`, max 5MB, images only
 
 ## Project Structure
 ```
 client/src/
   App.tsx          - Router with all routes
   components/
-    header.tsx     - Top navigation with search, categories, user menu
-    footer.tsx     - Footer with links
-    product-card.tsx - Product card + skeleton + price formatter
+    header.tsx     - Top navigation with search, categories, user menu (Thai)
+    footer.tsx     - Footer with links (Thai)
+    product-card.tsx - Product card + skeleton + price formatter (฿ symbol)
     ui/            - Shadcn UI components
   hooks/
-    use-auth.tsx   - Auth context provider + hook
+    use-auth.tsx   - Auth context provider + hook (staleTime: 0, setQueryData on login/register)
   pages/
-    home.tsx       - Home page with hero, categories, products
-    search.tsx     - Search with filters
-    product-detail.tsx - Product detail with buy/chat
-    category.tsx   - Category listing
-    login.tsx      - Login form
-    register.tsx   - Registration form
-    dashboard.tsx  - Seller dashboard overview
-    dashboard-products.tsx - Seller product management
-    dashboard-product-new.tsx - Create/edit product
-    dashboard-orders.tsx - Seller order management
-    buyer-orders.tsx - Buyer order history
-    chat.tsx       - Chat conversation list
-    chat-conversation.tsx - Chat messages with polling
-    mock-pay.tsx   - Mock payment page
-    admin.tsx      - Admin panel (products, orders, categories, users)
+    home.tsx       - Home page with hero, categories, products (Thai)
+    search.tsx     - Search with filters (Thai)
+    product-detail.tsx - Product detail with buy/chat (Thai)
+    category.tsx   - Category listing (Thai)
+    login.tsx      - Login form (Thai)
+    register.tsx   - Registration with buyer/seller toggle (Thai)
+    dashboard.tsx  - Seller dashboard overview with KYC banner (Thai)
+    dashboard-products.tsx - Seller product management (Thai)
+    dashboard-product-new.tsx - Create/edit product with file upload (Thai)
+    dashboard-orders.tsx - Seller order management (Thai)
+    dashboard-verify.tsx - KYC verification page for sellers (Thai)
+    buyer-orders.tsx - Buyer order history (Thai)
+    chat.tsx       - Chat conversation list (Thai)
+    chat-conversation.tsx - Chat messages with polling (Thai)
+    mock-pay.tsx   - Mock payment page (Thai)
+    admin.tsx      - Admin panel with products, orders, categories, users, KYC management (Thai)
+    not-found.tsx  - 404 page (Thai)
 server/
   index.ts         - Express app setup
   db.ts            - Database connection
@@ -49,13 +53,20 @@ shared/
 ```
 
 ## Database Models
-- Users (email/password auth, roles: user/admin)
+- Users (email/password auth, roles: user/admin, accountType: buyer/seller, KYC fields: kycStatus, idCardNumber, idCardImageFront/Back)
 - Categories (Thai names, slugs, active/inactive)
-- Products (seller, category, images, status: active/reserved/sold/hidden)
+- Products (seller, category, images, brand, model, size, color, location, status: active/reserved/sold/hidden)
 - Conversations (tied to product, buyer, seller)
-- Messages (polling-based chat)
+- Messages (polling-based chat, rate limit 30 msgs/min)
 - Orders (status flow: pending_payment -> paid -> preparing -> shipped -> completed)
 - Payments (mock gateway with session-based flow)
+
+## KYC Flow
+1. Seller registers with accountType="seller"
+2. Seller navigates to /dashboard/verify and submits ID card front/back + ID number
+3. KYC status goes to "pending"
+4. Admin approves/rejects via admin panel (/admin, Users tab)
+5. KYC status becomes "approved" or "rejected"
 
 ## Demo Accounts
 - Admin: admin@luxemarket.com / admin123
@@ -66,14 +77,15 @@ shared/
 ## Environment Variables
 - DATABASE_URL (auto-provisioned)
 - SESSION_SECRET
-- MOCKPAY_WEBHOOK_SECRET
 
 ## Key Features
-- Email/password authentication with role-based access
-- Product listings with images, search, category filtering
+- Email/password authentication with buyer/seller toggle at registration
+- KYC seller verification flow (ID card upload, admin approval)
+- Product listings with images, search, category filtering, extra fields (brand/model/size/color/location)
 - Seller dashboard for product/order management
 - Buyer order tracking
 - Real-time chat via polling
 - Mock payment gateway with success/fail/cancel flows
-- Admin panel for moderation
+- Admin panel for product/order/category/user/KYC management
 - Atomic product reservation to prevent double-selling
+- All UI in Thai language

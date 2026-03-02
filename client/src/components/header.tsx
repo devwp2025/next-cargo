@@ -2,7 +2,6 @@ import { Link, useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,7 +9,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Search, User, ShoppingBag, MessageCircle, Menu, X, ChevronDown } from "lucide-react";
+import { Search, User, MessageCircle, Menu, X } from "lucide-react";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import type { Category } from "@shared/schema";
@@ -36,9 +35,9 @@ export default function Header() {
     <header className="sticky top-0 z-50 bg-background border-b">
       <div className="bg-primary text-primary-foreground">
         <div className="max-w-7xl mx-auto px-4 py-1.5 flex items-center justify-between gap-2 text-xs">
-          <span data-testid="text-promo-banner">Pre-owned luxury starting at B5,000</span>
+          <span data-testid="text-promo-banner">สินค้ามือสองแบรนด์เนม เริ่มต้น ฿5,000</span>
           <div className="hidden sm:flex items-center gap-4">
-            <span>Free authentication on orders over B10,000</span>
+            <span>ตรวจสอบของแท้ฟรีสำหรับคำสั่งซื้อ ฿10,000 ขึ้นไป</span>
           </div>
         </div>
       </div>
@@ -46,7 +45,7 @@ export default function Header() {
       <div className="max-w-7xl mx-auto px-4">
         <div className="flex items-center justify-between gap-4 h-16">
           <Link href="/" data-testid="link-home">
-            <h1 className="text-xl font-bold tracking-tight">LUXE MARKET</h1>
+            <h1 className="text-xl font-bold tracking-tight">NEXT CARGO</h1>
           </Link>
 
           <form onSubmit={handleSearch} className="hidden md:flex flex-1 max-w-md mx-8">
@@ -55,7 +54,7 @@ export default function Header() {
               <Input
                 data-testid="input-search"
                 type="search"
-                placeholder="Search products..."
+                placeholder="ค้นหาสินค้า..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-9 pr-4 bg-muted border-0"
@@ -84,25 +83,25 @@ export default function Header() {
                     </div>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={() => navigate("/dashboard")} data-testid="link-dashboard">
-                      Seller Dashboard
+                      แดชบอร์ด
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => navigate("/me/orders")} data-testid="link-my-orders">
-                      My Orders
+                      คำสั่งซื้อของฉัน
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => navigate("/chat")} data-testid="link-chat">
-                      Messages
+                      ข้อความ
                     </DropdownMenuItem>
                     {user.role === "admin" && (
                       <>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem onClick={() => navigate("/admin")} data-testid="link-admin">
-                          Admin Panel
+                          จัดการระบบ
                         </DropdownMenuItem>
                       </>
                     )}
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={logout} data-testid="button-logout">
-                      Sign Out
+                      ออกจากระบบ
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
@@ -111,12 +110,12 @@ export default function Header() {
               <div className="flex items-center gap-2">
                 <Link href="/login">
                   <Button variant="ghost" size="sm" data-testid="link-login">
-                    Sign In
+                    เข้าสู่ระบบ
                   </Button>
                 </Link>
                 <Link href="/register">
                   <Button size="sm" data-testid="link-register">
-                    Register
+                    สมัครสมาชิก
                   </Button>
                 </Link>
               </div>
@@ -156,7 +155,7 @@ export default function Header() {
                 <Input
                   data-testid="input-search-mobile"
                   type="search"
-                  placeholder="Search products..."
+                  placeholder="ค้นหาสินค้า..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-9 bg-muted border-0"

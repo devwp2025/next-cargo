@@ -26,15 +26,15 @@ export default function MockPay() {
     },
     onSuccess: (_, action) => {
       if (action === "succeed") {
-        toast({ title: "Payment successful!" });
+        toast({ title: "ชำระเงินสำเร็จ!" });
         navigate("/me/orders");
       } else {
-        toast({ title: action === "fail" ? "Payment failed" : "Payment canceled", variant: "destructive" });
+        toast({ title: action === "fail" ? "การชำระเงินล้มเหลว" : "ยกเลิกการชำระเงิน", variant: "destructive" });
         navigate("/");
       }
     },
     onError: (err: Error) => {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      toast({ title: "เกิดข้อผิดพลาด", description: err.message, variant: "destructive" });
     },
   });
 
@@ -52,8 +52,8 @@ export default function MockPay() {
         <Card className="w-full max-w-md text-center">
           <CardContent className="pt-6">
             <XCircle className="w-12 h-12 text-destructive mx-auto mb-4" />
-            <p className="text-lg font-bold mb-2">Payment Not Found</p>
-            <p className="text-sm text-muted-foreground">This payment session is invalid or has expired.</p>
+            <p className="text-lg font-bold mb-2">ไม่พบรายการชำระเงิน</p>
+            <p className="text-sm text-muted-foreground">รายการชำระเงินนี้ไม่ถูกต้องหรือหมดอายุแล้ว</p>
           </CardContent>
         </Card>
       </div>
@@ -71,10 +71,10 @@ export default function MockPay() {
               <XCircle className="w-12 h-12 text-destructive mx-auto mb-4" />
             )}
             <p className="text-lg font-bold mb-2">
-              Payment {paymentInfo.status === "succeeded" ? "Complete" : "Failed"}
+              {paymentInfo.status === "succeeded" ? "ชำระเงินเรียบร้อยแล้ว" : "การชำระเงินล้มเหลว"}
             </p>
             <Button className="mt-4" onClick={() => navigate("/me/orders")} data-testid="button-go-orders">
-              View Orders
+              ดูคำสั่งซื้อ
             </Button>
           </CardContent>
         </Card>
@@ -89,22 +89,22 @@ export default function MockPay() {
           <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-2">
             <ShieldCheck className="w-6 h-6 text-foreground" />
           </div>
-          <CardTitle data-testid="text-payment-title">Mock Payment Gateway</CardTitle>
-          <CardDescription>This is a simulated payment for testing</CardDescription>
+          <CardTitle data-testid="text-payment-title">ช่องทางชำระเงินจำลอง</CardTitle>
+          <CardDescription>ระบบชำระเงินจำลองสำหรับทดสอบ</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="bg-muted rounded-md p-4 space-y-2">
             <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Item</span>
+              <span className="text-muted-foreground">สินค้า</span>
               <span className="font-medium" data-testid="text-payment-item">{paymentInfo.order.product.title}</span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Order #</span>
+              <span className="text-muted-foreground">คำสั่งซื้อ #</span>
               <span className="font-medium" data-testid="text-payment-order-id">{paymentInfo.order.id}</span>
             </div>
             <div className="border-t pt-2 mt-2">
               <div className="flex justify-between">
-                <span className="font-medium">Total</span>
+                <span className="font-medium">ยอดรวม</span>
                 <span className="text-lg font-bold" data-testid="text-payment-total">
                   {formatPrice(paymentInfo.order.amount)}
                 </span>
@@ -120,7 +120,7 @@ export default function MockPay() {
               data-testid="button-pay-success"
             >
               <CheckCircle className="w-4 h-4 mr-2" />
-              Pay Success
+              ชำระเงินสำเร็จ
             </Button>
             <div className="grid grid-cols-2 gap-2">
               <Button
@@ -131,7 +131,7 @@ export default function MockPay() {
                 data-testid="button-pay-fail"
               >
                 <XCircle className="w-4 h-4 mr-2" />
-                Pay Fail
+                ชำระเงินล้มเหลว
               </Button>
               <Button
                 variant="secondary"
@@ -141,7 +141,7 @@ export default function MockPay() {
                 data-testid="button-pay-cancel"
               >
                 <Ban className="w-4 h-4 mr-2" />
-                Cancel
+                ยกเลิก
               </Button>
             </div>
           </div>
