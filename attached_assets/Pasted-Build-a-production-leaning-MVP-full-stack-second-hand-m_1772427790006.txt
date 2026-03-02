@@ -1,0 +1,234 @@
+Build a production-leaning MVP full-stack second-hand marketplace using Next.js (App Router) with TypeScript.
+
+Tech stack:
+- Next.js (App Router) + TypeScript
+- PostgreSQL
+- Prisma ORM
+- Zod validation
+- bcrypt password hashing
+- Chat: POLLING ONLY (no Socket.IO / no WebSockets)
+- Environment variables for secrets
+- Provide README + seed data
+
+Non-goals:
+- No seller reviews/ratings
+- No parcel tracking number field
+
+========================================================
+0) IMPORTANT UX REQUIREMENT: POST-LOGIN ROLE REDIRECT
+========================================================
+- After a successful login, determine the user role server-side.
+- Automatically redirect:
+  - role=admin -> /admin
+  - role=user  -> /dashboard
+- If a logged-in user manually visits an unauthorized area:
+  - Non-admin trying /admin/* -> redirect to /dashboard (or show 403).
+  - Unauthenticated trying protected pages -> redirect to /login with returnUrl.
+
+========================================================
+1) AUTHENTICATION + AUTHORIZATION
+========================================================
+- Email/password register + login + logout.
+- Store users in DB with hashed passwords (bcrypt).
+- Roles: "user" default, "admin" (only for protected admin pages).
+- Protect routes with server-side checks (middleware or server utilities):
+  - Require login for dashboard/chat/orders
+  - Require admin role for /admin/*
+- Do NOT expose sensitive user data in client responses.
+
+========================================================
+2) DATABASE MODELS (Prisma)
+========================================================
+User:
+- id, name, email(unique), passwordHash, role(user/admin), createdAt
+
+Category:
+- id, name (Thai), slug (URL-safe unique), isActive boolean, createdAt
+
+Product:
+- id, sellerId, categoryId(required), title, description, price(int),
+  condition(string), images(string[]), status(active/reserved/sold/hidden),
+  createdAt
+
+Conversation:
+- id, productId, buyerId, sellerId, createdAt
+
+Message:
+- id, conversationId, senderId, text, createdAt
+
+Order:
+- id, productId, buyerId, sellerId, amount,
+  status(pending_payment/paid/preparing/shipped/completed/canceled),
+  createdAt, updatedAt
+
+Payment:
+- id, orderId(unique), provider("mockpay"), sessionId(unique),
+  status(requires_action/succeeded/failed), createdAt, updatedAt
+
+Add indices where appropriate:
+- Product(status, createdAt), Product(categoryId, status), Order(buyerId), Order(sellerId), Message(conversationId, createdAt)
+
+========================================================
+3) CATEGORY SYSTEM + ROUTES
+========================================================
+Seed initial categories (name -> slug):
+- รองเท้า -> shoes
+- กระเป๋า -> bags
+- เสื้อผ้า -> clothes
+- ของสะสม -> collectibles
+- เครื่องประดับ -> jewelry
+- เคสโทรศัพท์ -> phone-cases
+- โทรศัพท์ -> phones
+- ของใช้ -> household
+- ของเล่น -> toys
+
+Requirements:
+- Product must have exactly one Category (required).
+- Product create/edit form must require choosing an ACTIVE category.
+- Public category pages MUST use path:
+  /category/[slug]
+- /category/[slug] lists active products in that category (with keyword + price filters).
+
+Admin category management:
+- /admin/categories: list, create, edit, activate/deactivate categories.
+- Deactivated categories cannot be selected for new products; existing products keep category.
+
+========================================================
+4) PUBLIC PAGES
+========================================================
+- "/" Home: newest active products + basic search entry.
+- "/search": keyword + price range filters.
+- "/product/[id]": product details + images, show category, seller info (basic).
+  Buttons:
+  - "Chat Seller"
+  - "Buy Now"
+- "/category/[slug]": category listing page.
+
+Add pagination for product lists (simple page/limit query params).
+
+========================================================
+5) SELLER DASHBOARD (login required)
+========================================================
+Routes:
+- "/dashboard"
+- "/dashboard/products": list my products, edit, and change status (active/hidden/sold).
+- "/dashboard/products/new": create product (category required).
+- "/dashboard/orders": list orders for my products; seller can update status:
+  preparing -> shipped -> completed
+  plus canceled
+
+No parcel tracking number field.
+
+========================================================
+6) BUYER AREA (login required)
+========================================================
+- "/me/orders": list my orders and statuses.
+
+========================================================
+7) CHAT SYSTEM (POLLING ONLY)
+========================================================
+Routes:
+- "/chat"
+- "/chat/[conversationId]"
+
+Requirements:
+- A conversation is tied to (productId, buyerId, sellerId).
+- Only buyer and seller can read/send messages in that conversation.
+- Store messages in DB.
+- Implement polling to fetch new messages every 2-5 seconds.
+  - Use an endpoint like GET /api/chat/[conversationId]/messages?after=<timestampOrId>
+  - Return only messages newer than "after" to minimize bandwidth.
+- Sending a message uses POST /api/chat/[conversationId]/messages
+- Add basic rate limiting per user for sending messages (e.g., max N messages per minute).
+- Sanitize/escape message content to prevent XSS.
+
+========================================================
+8) MOCK PAYMENT GATEWAY (Payment model A)
+========================================================
+Flow:
+- On "Buy Now":
+  1) Create Order status = pending_payment
+  2) Reserve product to prevent double selling
+  3) Create Payment(provider=mockpay, status=requires_action, sessionId unique)
+  4) Redirect to /pay/mock/[sessionId]
+
+Mock checkout page: "/pay/mock/[sessionId]"
+- Show order summary
+- Buttons: Pay Success / Pay Fail / Cancel
+
+Webhook endpoint:
+POST /api/webhooks/mockpay
+- Verify header: x-mockpay-signature === MOCKPAY_WEBHOOK_SECRET
+- Events:
+  - payment.succeeded:
+      Payment.status = succeeded
+      Order.status = paid
+  - payment.failed OR payment.canceled:
+      Payment.status = failed
+      Order.status = canceled
+      Product.status = active (release reservation)
+
+IMPORTANT:
+- NEVER set Order paid from the client.
+- Only webhook updates payment/order final status.
+
+Idempotency:
+- Webhook handling must be idempotent:
+  - If a payment session is already succeeded/failed, ignore duplicates safely.
+  - Log repeated webhook events.
+
+========================================================
+9) CONCURRENCY / DOUBLE-SELL PROTECTION (Prod-leaning)
+========================================================
+- Implement reservation as an atomic DB operation using Prisma transaction:
+  - When creating an order, only reserve if Product.status is active.
+  - If not active, return an error "Product not available".
+- On payment failure/cancel, release reservation to active.
+- Consider setting Product.status to sold automatically when Order.status becomes completed (optional).
+
+========================================================
+10) ADMIN DASHBOARD (admin role required)
+========================================================
+Required admin capabilities (non-optional):
+- /admin/products:
+  - View all products
+  - View product details
+  - Change status: active/hidden
+  (Used for basic moderation: hide spam/illegal items)
+
+- /admin/orders:
+  - View all orders
+  - Inspect payment/order statuses
+
+- /admin/categories:
+  - Manage categories (list/create/edit/activate/deactivate)
+
+Optional admin capabilities (ONLY implement if easy):
+- (OPTIONAL) Allow admin to set Product.status = sold for special cases.
+- (OPTIONAL) /admin/users:
+    - View users list
+    - (OPTIONAL) promote/demote role user<->admin
+    - (OPTIONAL) disable/block a user
+  If not implemented, leave it out entirely.
+
+========================================================
+11) SECURITY / PRODUCTION-LEANING ENGINEERING
+========================================================
+- Use server-side authorization checks for every write action.
+- Validate all inputs with Zod.
+- Password hashing with bcrypt.
+- Add basic security headers (Content-Security-Policy can be minimal, X-Frame-Options, etc.).
+- Avoid leaking stack traces to the client; return safe error messages.
+- Add logging for key events: order created, reservation failed, webhook received, message sent.
+- Use environment variables:
+  - DATABASE_URL
+  - MOCKPAY_WEBHOOK_SECRET
+
+========================================================
+12) DELIVERABLES
+========================================================
+- Complete working project code.
+- Prisma schema + migrations instructions.
+- Seed script with demo users/products/categories, including at least 1 admin user.
+- README: setup steps, env vars, migrate, run dev, how to test mock payments and chat polling.
+- Clean minimal UI (Tailwind optional).
