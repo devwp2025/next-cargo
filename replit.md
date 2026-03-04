@@ -61,7 +61,14 @@ server/
     kyc.routes.ts        - /api/kyc/submit (KYC submission)
     admin.routes.ts      - /api/admin/* (products, orders, categories, users, KYC)
 shared/
-  schema.ts        - Drizzle schema + Zod validators + types
+  schema.ts        - Barrel file re-exporting all schema modules
+  schema/
+    users.schema.ts         - users table, insertUserSchema, loginSchema, User, InsertUser
+    categories.schema.ts    - categories table, insertCategorySchema, Category, InsertCategory
+    products.schema.ts      - products table, insertProductSchema, Product, InsertProduct
+    conversations.schema.ts - conversations + messages tables, insertMessageSchema, Conversation, Message
+    orders.schema.ts        - orders table, Order
+    payments.schema.ts      - payments table, Payment
 ```
 
 ## Database Models
