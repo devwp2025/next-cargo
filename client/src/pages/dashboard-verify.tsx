@@ -92,8 +92,8 @@ export default function DashboardVerify() {
       }
       return res.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
       toast({ title: "ส่งเอกสารยืนยันตัวตนสำเร็จ" });
       navigate("/dashboard");
     },
