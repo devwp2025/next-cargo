@@ -1,0 +1,75 @@
+Fix ONLY the following two issues in the current project.
+Do NOT refactor unrelated features or modify routing logic.
+
+ISSUE 1 — Dashboard KYC banner does not update after submission
+
+Current behavior:
+After a seller submits KYC from /dashboard/verify,
+the app redirects back to /dashboard.
+
+However, the banner message still shows the old status
+(e.g. "ยังไม่ยืนยันตัวตน") until the user manually refreshes the page.
+
+Expected behavior:
+After submitting KYC and redirecting to /dashboard,
+the banner should immediately reflect the new status
+(e.g. "รอตรวจสอบเอกสารยืนยันตัวตน").
+
+Fix this by ensuring fresh user data is loaded.
+
+Implementation:
+
+1. After successful KYC submission (/api/kyc/submit):
+   - redirect to /dashboard as before
+
+2. When /dashboard loads:
+   - re-fetch the current user data from:
+     GET /api/auth/me
+
+3. Update the dashboard state with the returned user object
+   so the banner reads the latest `kycStatus`.
+
+4. Do NOT rely on stale auth state stored in memory.
+
+5. Ensure fetch uses:
+   credentials: "include"
+   cache: "no-store"
+
+6. The banner should re-render immediately without manual refresh.
+
+Do NOT modify the KYC submission logic itself.
+
+
+ISSUE 2 — Change global font-family to Noto Sans Thai
+
+Update the entire application to use the Google font:
+
+Noto Sans Thai
+
+Requirements:
+
+1. Load the font using Google Fonts or next/font.
+
+Example:
+
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+2. Apply globally in the root layout or global CSS:
+
+body {
+  font-family: "Noto Sans Thai", sans-serif;
+}
+
+3. Ensure all pages (dashboard, admin, auth, product pages, etc.)
+inherit this font automatically.
+
+4. Do not modify individual components unless necessary.
+Use a global CSS approach.
+
+5. Keep existing UI styling intact.
+
+Acceptance criteria:
+
+- After KYC submission → redirect → dashboard banner shows updated status immediately.
+- No manual refresh required.
+- Entire website uses Noto Sans Thai font.

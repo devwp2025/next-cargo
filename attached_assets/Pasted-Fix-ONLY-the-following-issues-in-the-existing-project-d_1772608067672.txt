@@ -1,0 +1,67 @@
+Fix ONLY the following issues in the existing project (dev branch).
+Do NOT refactor, redesign, or change unrelated features/routes.
+
+ISSUE 1 — Admin KYC Approve/Reject does not actually update the user (API mismatch)
+In server/routes.ts, the existing admin KYC endpoint is:
+  PATCH /api/admin/users/:id/kyc
+and it validates body as:
+  { kycStatus: "unverified" | "pending" | "approved" | "rejected" }
+
+But the UI is currently triggering a POST request like:
+  POST /api/admin/users/:id/kyc
+and/or sending a different payload (e.g. { action: "approve" }).
+As a result, approve/reject appears to do nothing.
+
+Fix (choose ONE approach, minimal change):
+A) Update the frontend admin users page to call the existing endpoint correctly:
+   - Use PATCH /api/admin/users/:id/kyc
+   - Send JSON body: { kycStatus: "approved" } or { kycStatus: "rejected" }
+   - Ensure Content-Type: application/json
+   - After success, update the row in state or refetch the list
+
+OR
+
+B) Extend the backend to also accept POST with { action: "approve" | "reject" }:
+   - Map approve -> kycStatus="approved", reject -> kycStatus="rejected"
+   - Keep the existing PATCH behavior unchanged
+   - Return the updated user object (safe user) in response
+
+Requirement:
+- Approve/Reject must immediately reflect in the admin UI without manual refresh.
+
+ISSUE 2 — Stale data after actions (some is real cache/304, some is missing refetch)
+Symptoms:
+- Some GET /api/* responses return 304, causing stale UI (e.g. /api/admin/users).
+- Some pages are not truly cached but still don’t show the latest data until a full page refresh.
+
+Fix both:
+
+Backend (preferred):
+- Ensure dynamic API responses under /api are not cached by the browser.
+- Add middleware BEFORE /api routes:
+  - Set: Cache-Control: no-store
+  - (Optional) also: Pragma: no-cache
+- Specifically ensure admin/dashboard/auth endpoints return fresh data:
+  - GET /api/auth/me
+  - GET /api/admin/users
+  - GET /api/admin/*
+  - GET /api/dashboard/*
+  - GET /api/products, orders, chat endpoints as needed
+
+Frontend:
+- For all fetch calls to /api/*, include:
+  - credentials: "include"
+  - cache: "no-store"
+- After any mutation (approve/reject KYC, role change, status change):
+  - Immediately refetch the relevant list OR update local state using returned response.
+  - No manual page refresh should be required.
+
+Acceptance criteria:
+- Clicking Approve/Reject updates the user’s kycStatus in UI instantly.
+- /api/admin/users should not remain stale due to 304 after updates.
+- Pages affected by “needs refresh to see latest” should refetch/update state after actions.
+
+Constraints:
+- Do NOT modify other features.
+- Do NOT change routing structure.
+- Only touch code related to (1) admin approve/reject not working and (2) data freshness/staleness.

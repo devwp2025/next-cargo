@@ -346,8 +346,8 @@ function AdminUsers() {
   });
 
   const kycMutation = useMutation({
-    mutationFn: async ({ id, action }: { id: number; action: "approve" | "reject" }) => {
-      await apiRequest("POST", `/api/admin/users/${id}/kyc`, { action });
+    mutationFn: async ({ id, kycStatus }: { id: number; kycStatus: "approved" | "rejected" }) => {
+      await apiRequest("PATCH", `/api/admin/users/${id}/kyc`, { kycStatus });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
@@ -418,7 +418,7 @@ function AdminUsers() {
                     size="sm"
                     variant="outline"
                     className="text-green-700 border-green-500 hover:bg-green-50"
-                    onClick={() => kycMutation.mutate({ id: u.id, action: "approve" })}
+                    onClick={() => kycMutation.mutate({ id: u.id, kycStatus: "approved" })}
                     disabled={kycMutation.isPending}
                     data-testid={`button-approve-kyc-${u.id}`}
                   >
@@ -428,7 +428,7 @@ function AdminUsers() {
                     size="sm"
                     variant="outline"
                     className="text-red-700 border-red-500 hover:bg-red-50"
-                    onClick={() => kycMutation.mutate({ id: u.id, action: "reject" })}
+                    onClick={() => kycMutation.mutate({ id: u.id, kycStatus: "rejected" })}
                     disabled={kycMutation.isPending}
                     data-testid={`button-reject-kyc-${u.id}`}
                   >
