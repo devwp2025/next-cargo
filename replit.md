@@ -44,10 +44,22 @@ client/src/
 server/
   index.ts         - Express app setup
   db.ts            - Database connection
-  routes.ts        - All API routes
+  routes.ts        - Route aggregator (session, middleware, imports all route modules)
+  middleware.ts    - Shared middleware (requireAuth, requireAdmin, escapeHtml, multer upload config)
   storage.ts       - Database operations (IStorage interface)
   seed.ts          - Seed data with demo users/products
   vite.ts          - Vite dev server middleware
+  routes/
+    auth.routes.ts       - /api/auth/* (me, register, login, logout)
+    upload.routes.ts     - /api/upload (file upload)
+    categories.routes.ts - /api/categories* (public category listing)
+    products.routes.ts   - /api/products* (public product listing/search)
+    dashboard.routes.ts  - /api/dashboard/* (seller products + orders)
+    orders.routes.ts     - /api/orders, /api/me/orders (buyer orders)
+    payments.routes.ts   - /api/pay/mock/*, /api/webhooks/mockpay
+    chat.routes.ts       - /api/chat/* (conversations, messages)
+    kyc.routes.ts        - /api/kyc/submit (KYC submission)
+    admin.routes.ts      - /api/admin/* (products, orders, categories, users, KYC)
 shared/
   schema.ts        - Drizzle schema + Zod validators + types
 ```
